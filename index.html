@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeiterfassung</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1b4d3e">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js für Statistiken -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF für echten PDF-Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <h1>Arbeitszeiterfassung</h1>
+        <div id="current-time-display"></div>
+    </header>
+
+    <main class="app-main">
+        <!-- 1. Dashboard / Heute -->
+        <section id="view-dashboard" class="view active">
+            <div class="card summary-card">
+                <h2>Monatsübersicht (<span id="current-month-name">Oktober 2026</span>)</h2>
+                <div class="kpi-grid">
+                    <div class="kpi-box">
+                        <span class="kpi-label">Stunden</span>
+                        <span class="kpi-value" id="kpi-hours">0,00 h</span>
+                    </div>
+                    <div class="kpi-box">
+                        <span class="kpi-label">Bruttoverdienst</span>
+                        <span class="kpi-value" id="kpi-earnings">0,00 €</span>
+                    </div>
+                    <div class="kpi-box">
+                        <span class="kpi-label">Arbeitstage</span>
+                        <span class="kpi-value" id="kpi-days">0</span>
+                    </div>
+                    <div class="kpi-box">
+                        <span class="kpi-label">Stundenlohn</span>
+                        <span class="kpi-value" id="kpi-wage">12,00 €</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header-row">
+                    <h3>Heutiger Eintrag</h3>
+                    <button class="btn btn-primary" id="btn-quick-add">+ Erfassen / Bearbeiten</button>
+                </div>
+                <div id="today-entry-details" class="today-details">
+                    <p class="text-muted">Keine Arbeitszeit für heute erfasst.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Letzte Buchungen</h3>
+                <div id="recent-entries-list" class="entry-list">
+                    <!-- Wird dynamisch gefüllt -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Kalender -->
+        <section id="view-calendar" class="view">
+            <div class="card">
+                <div class="calendar-nav">
+                    <button class="btn btn-secondary" id="cal-prev">&#9664;</button>
+                    <h3 id="cal-month-year">Oktober 2026</h3>
+                    <button class="btn btn-secondary" id="cal-next">&#9654;</button>
+                </div>
+                <div class="calendar-controls">
+                    <button class="btn btn-sm btn-secondary" id="cal-today">Heute</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Wird dynamisch gefüllt -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Statistiken -->
+        <section id="view-stats" class="view">
+            <div class="card">
+                <h3>Statistiken & Auswertungen</h3>
+                <div class="stats-summary">
+                    <p>Gesamtstunden (alle Zeiten): <strong id="stats-total-hours">0,00 h</strong></p>
+                    <p>Gesamtverdienst (gesamt): <strong id="stats-total-earnings">0,00 €</strong></p>
+                    <p>Ø Tägliche Arbeitszeit: <strong id="stats-avg-hours">0,00 h</strong></p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="hoursChart"></canvas>
+                </div>
+                <div class="chart-container" style="margin-top: 2rem;">
+                    <canvas id="earningsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Export und Einstellungen -->
+        <section id="view-settings" class="view">
+            <div class="card">
+                <h3>PDF-Stundenzettel Export</h3>
+                <div class="form-group">
+                    <label for="pdf-month">Monat auswählen:</label>
+                    <input type="month" id="pdf-month" value="2026-10" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="pdf-employee">Name Arbeitnehmer (optional):</label>
+                    <input type="text" id="pdf-employee" placeholder="Max Mustermann" class="form-control">
+                </div>
+                <button class="btn btn-primary btn-block" id="btn-export-pdf">PDF herunterladen</button>
+            </div>
+
+            <div class="card">
+                <h3>Einstellungen & Stammdaten</h3>
+                <div class="form-group">
+                    <label for="setting-wage">Standard-Stundenlohn (€):</label>
+                    <input type="number" step="0.01" id="setting-wage" value="12.00" class="form-control">
+                </div>
+                <button class="btn btn-primary" id="btn-save-settings">Einstellungen speichern</button>
+            </div>
+
+            <div class="card">
+                <h3>Datensicherung (JSON)</h3>
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="btn-json-export">Daten exportieren</button>
+                    <label class="btn btn-secondary file-upload-label">
+                        Daten importieren <input type="file" id="btn-json-import" accept=".json" style="display: none;">
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Demo-Daten</h3>
+                <p class="text-muted text-sm">Mit Beispieldaten für Oktober 2026 starten oder alle Daten bereinigen.</p>
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="btn-load-demo">Demo-Daten laden</button>
+                    <button class="btn btn-danger" id="btn-clear-data">Alle Daten löschen</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Navigation unten -->
+    <nav class="app-nav">
+        <button class="nav-item active" data-target="view-dashboard">
+            <span>Heute</span>
+        </button>
+        <button class="nav-item" data-target="view-calendar">
+            <span>Kalender</span>
+        </button>
+        <button class="nav-item" data-target="view-stats">
+            <span>Statistik</span>
+        </button>
+        <button class="nav-item" data-target="view-settings">
+            <span>Export & Setup</span>
+        </button>
+    </nav>
+
+    <!-- Modal für Arbeitszeit erfassen/bearbeiten -->
+    <div id="entry-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Arbeitszeit erfassen</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="entry-form">
+                <input type="hidden" id="entry-id">
+                <div class="form-group">
+                    <label for="input-date">Datum:</label>
+                    <input type="date" id="input-date" required class="form-control">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="input-start">Arbeitsbeginn:</label>
+                        <input type="time" id="input-start" value="08:00" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="input-end">Arbeitsende:</label>
+                        <input type="time" id="input-end" value="16:30" required class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-break">Pause (Minuten):</label>
+                    <input type="number" id="input-break" value="30" min="0" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="input-type">Kennzeichnung:</label>
+                    <select id="input-type" class="form-control">
+                        <option value=" Arbeit">Reguläre Arbeit</option>
+                        <option value="Urlaub">Urlaub</option>
+                        <option value="Krank">Krank</option>
+                        <option value="Feiertag">Feiertag</option>
+                        <option value="Frei">Frei / Kein Arbeitstag</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="input-note">Notiz (optional):</label>
+                    <textarea id="input-note" class="form-control" rows="2" placeholder="z.B. Überstunden / besonderes Projekt"></textarea>
+                </div>
+                <div class="preview-box">
+                    <span>Netto-Vorschau: <strong id="preview-hours">0,00 h</strong></span>
+                    <span>Verdienst: <strong id="preview-earnings">0,00 €</strong></span>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Skripte -->
+    <script src="js/db.js"></script>
+    <script src="js/pdf-export.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
