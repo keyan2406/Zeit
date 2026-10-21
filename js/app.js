@@ -13,14 +13,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initApp() {
-    hourlywagesetting = await db.getSetting('hourlyWage', 12.00);
-    hourlyWage = Number(hourlywagesetting);
+    try {
+        const savedWage = await db.getSetting('hourlyWage', 12.00);
+        hourlyWage = savedWage !== null && savedWage !== undefined ? Number(savedWage) : 12.00;
+    } catch (e) {
+        hourlyWage = 12.00;
+    }
+
     document.getElementById('setting-wage').value = hourlyWage.toFixed(2);
     document.getElementById('kpi-wage').textContent = `${hourlyWage.toFixed(2).replace('.', ',')} €`;
 
     entries = await db.getAllEntries();
     
-    // Falls keine Einträge existieren, Beispieldaten direkt anbieten/laden
     if (entries.length === 0) {
         await loadDemoData();
     } else {
