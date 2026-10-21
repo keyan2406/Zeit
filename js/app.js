@@ -14,22 +14,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initApp() {
     try {
-        const savedWage = await db.getSetting('hourlyWage', 12.00);
-        hourlyWage = savedWage !== null && savedWage !== undefined ? Number(savedWage) : 12.00;
+        const savedWage = await db.getSetting('hourlyWage', 13.50);
+        hourlyWage = savedWage !== null && savedWage !== undefined ? Number(savedWage) : 13.50;
     } catch (e) {
-        hourlyWage = 12.00;
+        hourlyWage = 13.50;
     }
 
     document.getElementById('setting-wage').value = hourlyWage.toFixed(2);
     document.getElementById('kpi-wage').textContent = `${hourlyWage.toFixed(2).replace('.', ',')} €`;
 
     entries = await db.getAllEntries();
-    
-    if (entries.length === 0) {
-        await loadDemoData();
-    } else {
-        refreshUI();
-    }
+    refreshUI();
 }
 
 function refreshUI() {
@@ -329,9 +324,9 @@ function renderCalendar() {
 function openModal(dateStr) {
     document.getElementById('entry-id').value = '';
     document.getElementById('input-date').value = dateStr;
-    document.getElementById('input-start').value = '08:00';
-    document.getElementById('input-end').value = '16:30';
-    document.getElementById('input-break').value = '30';
+ document.getElementById('input-start').value = '09:00';
+document.getElementById('input-end').value = '18:00';
+document.getElementById('input-break').value = '60';
     document.getElementById('input-type').value = 'Arbeit';
     document.getElementById('input-note').value = '';
 
@@ -389,7 +384,7 @@ function updateModalPreview() {
     const netHours = Math.max(0, netMins / 60);
     const earnings = netHours * hourlyWage;
 
-    document.getElementById('preview-hours').textContent = `${netHours.toFixed(2).replace('.', ',')} h`;
+  document.getElementById('preview-hours').textContent = `${netHours.toFixed(2).replace('.', ',')} h`;
     document.getElementById('preview-earnings').textContent = `${earnings.toFixed(2).replace('.', ',')} €`;
 }
 
@@ -471,19 +466,8 @@ function renderCharts() {
     });
 }
 
-// Beispieldaten für Oktober 2026
 async function loadDemoData() {
-    const demoEntries = [
-        { date: "2026-10-01", start: "08:00", end: "16:30", breakMins: 30, type: "Arbeit", note: "Regulärer Tag" },
-        { date: "2026-10-02", start: "08:00", end: "16:30", breakMins: 30, type: "Arbeit", note: "Regulärer Tag" },
-        { date: "2026-10-05", start: "08:30", end: "17:00", breakMins: 30, type: "Arbeit", note: "Etwas später begonnen" },
-        { date: "2026-10-06", start: "08:00", end: "16:30", breakMins: 45, type: "Arbeit", note: "Längere Pause" },
-        { date: "2026-10-07", start: "08:00", end: "15:00", breakMins: 30, type: "Arbeit", note: "Früher Feierabend" },
-        { date: "2026-10-08", start: "00:00", end: "00:00", breakMins: 0, type: "Krank", note: "Arztbesuch / Krank" }
-    ];
-
-    for (let entry of demoEntries) {
-        await db.saveEntry(entry);
-    }
+    // Demo-Daten deaktiviert
     entries = await db.getAllEntries();
+    refreshUI();
 }
